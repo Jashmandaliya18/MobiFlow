@@ -7,10 +7,14 @@ import API from '../api/axios';
 import DataTable from '../components/DataTable';
 import toast from 'react-hot-toast';
 import { HiOutlineUsers, HiOutlineShieldCheck } from 'react-icons/hi';
+import { ROLES, ROLE_LABELS } from '../config/permissions';
+import { useAuth } from '../context/AuthContext';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { hasPerm } = useAuth();
+  const canManageRole = hasPerm('user:manage_role');
 
   useEffect(() => { fetchUsers(); }, []);
 
@@ -35,10 +39,16 @@ const Users = () => {
     }
   };
 
+  // Distinct colours per role so the management table is scannable.
   const roleBadge = {
     admin: 'badge-danger',
-    employee: 'badge-info',
-    distributor: 'badge-purple'
+    procurement: 'badge-success',
+    warehouse: 'badge-info',
+    production: 'badge-warning',
+    qa: 'badge-pink',
+    dispatch: 'badge-purple',
+    distributor: 'badge-purple',
+    employee: 'badge-info'
   };
 
   const columns = [
@@ -55,7 +65,10 @@ const Users = () => {
       </div>
     )},
     { header: 'Role', render: (item) => (
-      <span className={`badge ${roleBadge[item.role]}`}>{item.role}</span>
+      <span className={`badge ${roleBadge[item.role] || 'badge-info'}`}>{ROLE_LABELS[item.role] || item.role}</span>
+    )},
+    { header: 'Permissions', render: (item) => (
+      <span className="text-xs text-slate-400">{(item.permissions || []).length} granted</span>
     )},
     { header: 'Joined', render: (item) => (
       <span className="text-sm text-slate-400">{new Date(item.createdAt).toLocaleDateString()}</span>
@@ -63,13 +76,14 @@ const Users = () => {
     { header: 'Change Role', render: (item) => (
       <select
         value={item.role}
+        disabled={!canManageRole}
         onChange={(e) => updateRole(item._id, e.target.value)}
-        className="select-field text-xs py-1.5 px-2"
-        style={{ width: 'auto', minWidth: '120px' }}
+        className="select-field"
+        style={{ width: '170px', padding: '6px 28px 6px 10px', fontSize: '12px' }}
       >
-        <option value="admin">Admin</option>
-        <option value="employee">Employee</option>
-        <option value="distributor">Distributor</option>
+        {ROLES.map((r) => (
+          <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+        ))}
       </select>
     )}
   ];
@@ -79,26 +93,31 @@ const Users = () => {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+    <div className="animate-fade-in page-container">
+      <div className="page-header">
+        <div style={{ minWidth: 0 }}>
+          <h1 className="flex items-center gap-2">
             <HiOutlineUsers className="text-indigo-400" /> User Management
           </h1>
-          <p className="text-slate-400 text-sm mt-1">Manage users and assign roles</p>
+          <p className="subtitle">Manage users and assign roles</p>
         </div>
-        <div className="flex items-center gap-2">
-          <HiOutlineShieldCheck className="text-indigo-400" />
-          <span className="text-sm text-slate-400">{users.length} Total Users</span>
+        <div className="actions">
+          <span className="flex items-center gap-2 text-sm text-slate-400">
+            <HiOutlineShieldCheck className="text-indigo-400" /> {users.length} Total Users
+          </span>
         </div>
       </div>
 
-      {/* Role Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        {['admin', 'employee', 'distributor'].map(role => (
-          <div key={role} className="glass-card p-4 text-center">
-            <p className="text-xl font-bold text-white">{users.filter(u => u.role === role).length}</p>
-            <span className={`badge ${roleBadge[role]} mt-1`}>{role}</span>
+      {/* Role Summary — auto-fit so 8 roles flow cleanly across available width */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '12px'
+      }}>
+        {ROLES.map((role) => (
+          <div key={role} className="glass-card p-3 text-center">
+            <p className="text-xl font-bold text-white">{users.filter((u) => u.role === role).length}</p>
+            <span className={`badge ${roleBadge[role] || 'badge-info'} mt-1`}>{ROLE_LABELS[role]}</span>
           </div>
         ))}
       </div>

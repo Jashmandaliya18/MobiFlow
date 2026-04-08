@@ -17,7 +17,9 @@ const Login = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await API.post('/auth/login', form);
+      // skipAuthRedirect: let bad creds just toast an error — the global
+      // 401 interceptor would otherwise treat this like a session eviction.
+      const { data } = await API.post('/auth/login', form, { skipAuthRedirect: true });
       login(data.user, data.token);
       toast.success(`Welcome back, ${data.user.name}!`);
       navigate('/dashboard');
@@ -146,9 +148,13 @@ const Login = () => {
         }}>
           <p style={{ fontSize: '10px', fontWeight: '700', color: '#6366f1', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '12px' }}>Demo Credentials</p>
           {[
-            { role: 'Admin', email: 'admin@mobiflow.com', pass: 'admin123', color: '#f87171' },
-            { role: 'Employee', email: 'john@mobiflow.com', pass: 'employee123', color: '#60a5fa' },
-            { role: 'Distributor', email: 'techmart@dist.com', pass: 'dist123', color: '#a78bfa' },
+            { role: 'Admin',       email: 'admin@mobiflow.com',   pass: 'admin123',     color: '#f87171' },
+            { role: 'Procurement', email: 'priya@mobiflow.com',   pass: 'procure123',   color: '#34d399' },
+            { role: 'Warehouse',   email: 'warren@mobiflow.com',  pass: 'warehouse123', color: '#38bdf8' },
+            { role: 'Production',  email: 'prakash@mobiflow.com', pass: 'produce123',   color: '#fbbf24' },
+            { role: 'QA',          email: 'qadir@mobiflow.com',   pass: 'qaqa1234',     color: '#f472b6' },
+            { role: 'Dispatch',    email: 'deepa@mobiflow.com',   pass: 'dispatch123',  color: '#c084fc' },
+            { role: 'Distributor', email: 'techmart@dist.com',    pass: 'dist123',      color: '#a78bfa' },
           ].map(c => (
             <div key={c.role} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px', marginBottom: '6px' }}>
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: c.color, flexShrink: 0 }} />

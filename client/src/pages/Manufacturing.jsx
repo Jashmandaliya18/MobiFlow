@@ -5,10 +5,17 @@
 import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import DataTable from '../components/DataTable';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineX, HiOutlineArrowRight } from 'react-icons/hi';
 
 const Manufacturing = () => {
+  const { hasPerm } = useAuth();
+  const canCreate = hasPerm(PERMISSIONS.MFG_CREATE);
+  const canUpdate = hasPerm(PERMISSIONS.MFG_UPDATE);
+  const canViewRaw = hasPerm(PERMISSIONS.RAW_VIEW);
+
   const [batches, setBatches] = useState([]);
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,12 +29,14 @@ const Manufacturing = () => {
 
   const fetchData = async () => {
     try {
-      const [batchRes, matRes] = await Promise.all([
-        API.get('/manufacturing/all'),
-        API.get('/raw/all')
-      ]);
+      // Only fetch the material catalogue if the user can actually see it.
+      // QA / warehouse-only users would get a 403 otherwise.
+      const requests = [API.get('/manufacturing/all')];
+      if (canViewRaw) requests.push(API.get('/raw/all'));
+
+      const [batchRes, matRes] = await Promise.all(requests);
       setBatches(batchRes.data);
-      setMaterials(matRes.data);
+      setMaterials(matRes?.data || []);
     } catch (err) {
       toast.error('Failed to fetch data');
     } finally {
@@ -111,18 +120,20 @@ const Manufacturing = () => {
     { header: 'Defects', render: (item) => (
       <span className={item.defective_count > 0 ? 'text-red-400 font-semibold' : 'text-slate-500'}>{item.defective_count}</span>
     )},
-    { header: 'Actions', render: (item) => {
-      const nextStage = getNextStage(item.stage);
-      if (!nextStage || item.status === 'Completed') return <span className="text-xs text-slate-600">Done</span>;
-      return (
-        <button
-          onClick={() => updateBatch(item._id, { stage: nextStage, status: nextStage === 'Completed' ? 'Completed' : 'In Progress' })}
-          className="btn-secondary text-xs py-1 px-3"
-        >
-          → {nextStage}
-        </button>
-      );
-    }}
+    ...(canUpdate ? [{
+      header: 'Actions', render: (item) => {
+        const nextStage = getNextStage(item.stage);
+        if (!nextStage || item.status === 'Completed') return <span className="text-xs text-slate-600">Done</span>;
+        return (
+          <button
+            onClick={() => updateBatch(item._id, { stage: nextStage, status: nextStage === 'Completed' ? 'Completed' : 'In Progress' })}
+            className="btn-secondary text-xs py-1 px-3"
+          >
+            → {nextStage}
+          </button>
+        );
+      }
+    }] : [])
   ];
 
   if (loading) {
@@ -130,20 +141,24 @@ const Manufacturing = () => {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Manufacturing & Assembly</h1>
-          <p className="text-slate-400 text-sm mt-1">Create and track production batches</p>
+    <div className="animate-fade-in page-container">
+      <div className="page-header">
+        <div style={{ minWidth: 0 }}>
+          <h1>Manufacturing &amp; Assembly</h1>
+          <p className="subtitle">Create and track production batches</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          {showForm ? <><HiOutlineX /> Close</> : <><HiOutlinePlus /> Create Batch</>}
-        </button>
+        {canCreate && (
+          <div className="actions">
+            <button onClick={() => setShowForm(!showForm)} className="btn-primary">
+              {showForm ? <><HiOutlineX /> Close</> : <><HiOutlinePlus /> Create Batch</>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Create Batch Form */}
-      {showForm && (
-        <div className="glass-card p-6 mb-6 animate-fade-in">
+      {showForm && canCreate && (
+        <div className="glass-card p-6 animate-fade-in">
           <h3 className="text-lg font-semibold text-white mb-4">Create Production Batch</h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -160,11 +175,12 @@ const Manufacturing = () => {
             {/* BOM Section */}
             <div>
               <label className="block text-sm text-slate-300 mb-2">Bill of Materials (BOM)</label>
-              <div className="flex gap-3 mb-3">
+              <div className="flex flex-wrap gap-3 mb-3">
                 <select
                   value={selectedMaterial.material}
                   onChange={(e) => setSelectedMaterial({ ...selectedMaterial, material: e.target.value })}
-                  className="select-field flex-1"
+                  className="select-field"
+                  style={{ flex: '1 1 200px', minWidth: '200px' }}
                 >
                   <option value="">Select Material</option>
                   {materials.map(m => (
@@ -177,10 +193,11 @@ const Manufacturing = () => {
                   placeholder="Qty"
                   value={selectedMaterial.quantity_used}
                   onChange={(e) => setSelectedMaterial({ ...selectedMaterial, quantity_used: e.target.value })}
-                  className="input-field w-28"
+                  className="input-field"
+                  style={{ width: '110px', flex: '0 0 110px' }}
                 />
-                <button type="button" onClick={addMaterialToBOM} className="btn-secondary">
-                  <HiOutlinePlus />
+                <button type="button" onClick={addMaterialToBOM} className="btn-secondary" style={{ flex: '0 0 auto' }}>
+                  <HiOutlinePlus /> Add
                 </button>
               </div>
 

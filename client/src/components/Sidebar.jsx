@@ -1,39 +1,41 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 import {
   HiOutlineViewGrid, HiOutlineCube, HiOutlineCog, HiOutlineClipboardCheck,
   HiOutlineArchive, HiOutlineShoppingCart, HiOutlineTruck, HiOutlineChartBar, HiOutlineUsers
 } from 'react-icons/hi';
 
 const Sidebar = () => {
-  const { hasRole } = useAuth();
+  const { hasAnyPerm } = useAuth();
 
+  // Each entry lists the permissions that should expose the link.
+  // Showing a link only requires that the user hold AT LEAST ONE of them.
   const menuItems = [
-    { path: '/dashboard', icon: HiOutlineViewGrid, label: 'Dashboard', roles: ['admin', 'employee', 'distributor'] },
-    { path: '/raw-materials', icon: HiOutlineCube, label: 'Raw Materials', roles: ['admin', 'employee'] },
-    { path: '/manufacturing', icon: HiOutlineCog, label: 'Manufacturing', roles: ['admin', 'employee'] },
-    { path: '/quality-control', icon: HiOutlineClipboardCheck, label: 'Quality Control', roles: ['admin', 'employee'] },
-    { path: '/inventory', icon: HiOutlineArchive, label: 'Inventory', roles: ['admin', 'employee', 'distributor'] },
-    { path: '/orders', icon: HiOutlineShoppingCart, label: 'Orders', roles: ['admin', 'employee', 'distributor'] },
-    { path: '/dispatch', icon: HiOutlineTruck, label: 'Dispatch', roles: ['admin', 'employee'] },
-    { path: '/reports', icon: HiOutlineChartBar, label: 'Reports', roles: ['admin', 'employee'] },
-    { path: '/users', icon: HiOutlineUsers, label: 'Users', roles: ['admin'] },
+    { path: '/dashboard',      icon: HiOutlineViewGrid,       label: 'Dashboard',       perms: [PERMISSIONS.DASHBOARD_VIEW] },
+    { path: '/raw-materials',  icon: HiOutlineCube,           label: 'Raw Materials',   perms: [PERMISSIONS.RAW_VIEW, PERMISSIONS.RAW_ADD] },
+    { path: '/manufacturing',  icon: HiOutlineCog,            label: 'Manufacturing',   perms: [PERMISSIONS.MFG_VIEW, PERMISSIONS.MFG_CREATE] },
+    { path: '/quality-control',icon: HiOutlineClipboardCheck, label: 'Quality Control', perms: [PERMISSIONS.QC_VIEW, PERMISSIONS.QC_ADD] },
+    { path: '/inventory',      icon: HiOutlineArchive,        label: 'Inventory',       perms: [PERMISSIONS.INV_VIEW] },
+    { path: '/orders',         icon: HiOutlineShoppingCart,   label: 'Orders',          perms: [PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_VIEW_OWN, PERMISSIONS.ORDER_PLACE] },
+    { path: '/dispatch',       icon: HiOutlineTruck,          label: 'Dispatch',        perms: [PERMISSIONS.DISPATCH_VIEW, PERMISSIONS.DISPATCH_CREATE] },
+    { path: '/reports',        icon: HiOutlineChartBar,       label: 'Reports',         perms: [PERMISSIONS.REPORT_INVENTORY, PERMISSIONS.REPORT_ORDERS, PERMISSIONS.REPORT_RAW, PERMISSIONS.REPORT_MANUFACTURING, PERMISSIONS.REPORT_QUALITY] },
+    { path: '/users',          icon: HiOutlineUsers,          label: 'Users',           perms: [PERMISSIONS.USER_VIEW] },
   ];
 
   return (
-    <aside style={{
+    <aside className="app-sidebar" style={{
       position: 'fixed', left: 0, top: '64px', bottom: 0, width: '220px', zIndex: 40,
       background: 'rgba(5, 8, 22, 0.85)', borderRight: '1px solid rgba(99, 102, 241, 0.06)',
-      overflowY: 'auto', display: 'flex', flexDirection: 'column',
+      overflowY: 'auto', flexDirection: 'column',
     }}>
-      {/* Navigation links */}
       <nav style={{ padding: '20px 12px', flex: 1 }}>
         <p style={{ fontSize: '10px', fontWeight: '700', color: '#475569', textTransform: 'uppercase', letterSpacing: '0.12em', padding: '0 12px', marginBottom: '12px' }}>
           Menu
         </p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
           {menuItems.map((item) => {
-            if (!hasRole(...item.roles)) return null;
+            if (!hasAnyPerm(...item.perms)) return null;
             const Icon = item.icon;
             return (
               <NavLink
@@ -57,7 +59,6 @@ const Sidebar = () => {
         </div>
       </nav>
 
-      {/* Bottom */}
       <div style={{ padding: '16px', borderTop: '1px solid rgba(99, 102, 241, 0.06)' }}>
         <p style={{ fontSize: '11px', color: '#475569', textAlign: 'center', fontWeight: '500' }}>MobiFlow v1.0</p>
       </div>

@@ -5,10 +5,16 @@
 import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import DataTable from '../components/DataTable';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineExclamation, HiOutlinePencil, HiOutlineX } from 'react-icons/hi';
 
 const RawMaterials = () => {
+  const { hasPerm } = useAuth();
+  const canAdd = hasPerm(PERMISSIONS.RAW_ADD);
+  const canUpdate = hasPerm(PERMISSIONS.RAW_UPDATE);
+
   const [materials, setMaterials] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,11 +110,13 @@ const RawMaterials = () => {
         ? <span className="status-badge status-low">Low Stock</span>
         : <span className="status-badge status-in-stock">In Stock</span>
     )},
-    { header: 'Actions', render: (item) => (
-      <button onClick={() => handleEdit(item)} className="btn-secondary text-xs py-1 px-3">
-        <HiOutlinePencil className="inline mr-1" /> Edit
-      </button>
-    )}
+    ...(canUpdate ? [{
+      header: 'Actions', render: (item) => (
+        <button onClick={() => handleEdit(item)} className="btn-secondary text-xs py-1 px-3">
+          <HiOutlinePencil className="inline mr-1" /> Edit
+        </button>
+      )
+    }] : [])
   ];
 
   if (loading) {
@@ -116,23 +124,27 @@ const RawMaterials = () => {
   }
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in page-container">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Raw Materials</h1>
-          <p className="text-slate-400 text-sm mt-1">Manage raw materials and supplier tracking</p>
+      <div className="page-header">
+        <div style={{ minWidth: 0 }}>
+          <h1>Raw Materials</h1>
+          <p className="subtitle">Manage raw materials and supplier tracking</p>
         </div>
-        <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn-primary">
-          {showForm ? <><HiOutlineX /> Close</> : <><HiOutlinePlus /> Add Material</>}
-        </button>
+        {canAdd && (
+          <div className="actions">
+            <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn-primary">
+              {showForm ? <><HiOutlineX /> Close</> : <><HiOutlinePlus /> Add Material</>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Low Stock Alert */}
       {lowStock.length > 0 && (
-        <div className="glass-card p-4 mb-6 flex items-start gap-3" style={{ borderColor: 'rgba(245, 158, 11, 0.3)' }}>
+        <div className="glass-card p-4 flex items-start gap-3" style={{ borderColor: 'rgba(245, 158, 11, 0.3)' }}>
           <HiOutlineExclamation className="text-2xl text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
+          <div style={{ minWidth: 0 }}>
             <p className="font-semibold text-amber-400">Low Stock Alert</p>
             <p className="text-sm text-slate-400">
               {lowStock.length} material(s) at or below reorder threshold:
@@ -144,7 +156,7 @@ const RawMaterials = () => {
 
       {/* Add/Edit Form */}
       {showForm && (
-        <div className="glass-card p-6 mb-6 animate-fade-in">
+        <div className="glass-card p-6 animate-fade-in">
           <h3 className="text-lg font-semibold text-white mb-4">
             {editId ? 'Edit Material' : 'Add New Material'}
           </h3>
@@ -173,11 +185,11 @@ const RawMaterials = () => {
               <label className="block text-sm text-slate-300 mb-1">Reorder Threshold</label>
               <input name="reorder_threshold" type="number" min="0" value={form.reorder_threshold} onChange={handleChange} className="input-field" placeholder="50" />
             </div>
-            <div className="md:col-span-2 lg:col-span-2">
+            <div className="md:col-span-2 lg:col-span-3">
               <label className="block text-sm text-slate-300 mb-1">Storage Location</label>
               <input name="storage_location" value={form.storage_location} onChange={handleChange} className="input-field" required placeholder="e.g. Warehouse A - Shelf 1" />
             </div>
-            <div className="flex items-end gap-3">
+            <div className="md:col-span-2 lg:col-span-3 flex flex-wrap gap-3 pt-2">
               <button type="submit" className="btn-primary">{editId ? 'Update' : 'Add'} Material</button>
               <button type="button" onClick={resetForm} className="btn-secondary">Cancel</button>
             </div>

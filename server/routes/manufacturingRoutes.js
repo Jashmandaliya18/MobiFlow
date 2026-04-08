@@ -1,16 +1,15 @@
 /**
- * Manufacturing Routes
- * Admin and employees can create/update batches
- * All authenticated users can view
+ * Manufacturing Routes (SRS §3.1.2)
  */
 const express = require('express');
 const router = express.Router();
 const { createBatch, updateBatch, getAllBatches } = require('../controllers/manufacturingController');
 const auth = require('../middleware/auth');
-const roleAuth = require('../middleware/roleAuth');
+const { requirePerm } = require('../middleware/rbac');
+const { PERMISSIONS } = require('../config/permissions');
 
-router.post('/create', auth, roleAuth('admin', 'employee'), createBatch);
-router.put('/update/:id', auth, roleAuth('admin', 'employee'), updateBatch);
-router.get('/all', auth, getAllBatches);
+router.post('/create',    auth, requirePerm(PERMISSIONS.MFG_CREATE), createBatch);
+router.put('/update/:id', auth, requirePerm(PERMISSIONS.MFG_UPDATE), updateBatch);
+router.get('/all',        auth, requirePerm(PERMISSIONS.MFG_VIEW),   getAllBatches);
 
 module.exports = router;

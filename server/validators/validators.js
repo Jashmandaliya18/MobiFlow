@@ -5,6 +5,24 @@
 const Joi = require('joi');
 
 // --- Auth Validators ---
+// SRS §4.1.1: min 12 chars, upper + lower + digit + special.
+// Legacy seed users use shorter passwords, so the policy is only enforced
+// on /register + /update; login continues to accept existing hashes.
+const STRONG_PASSWORD = Joi.string()
+  .min(12)
+  .pattern(/[A-Z]/, 'uppercase letter')
+  .pattern(/[a-z]/, 'lowercase letter')
+  .pattern(/\d/, 'digit')
+  .pattern(/[^A-Za-z0-9]/, 'special character')
+  .required()
+  .messages({
+    'string.min': 'Password must be at least 12 characters',
+    'string.pattern.name': 'Password must include an {#name}',
+    'any.required': 'Password is required'
+  });
+
+const ROLE_VALUES = ['admin', 'procurement', 'warehouse', 'production', 'qa', 'dispatch', 'distributor', 'employee'];
+
 const registerSchema = Joi.object({
   name: Joi.string().min(2).max(100).required().messages({
     'string.min': 'Name must be at least 2 characters',
@@ -14,16 +32,24 @@ const registerSchema = Joi.object({
     'string.email': 'Please enter a valid email',
     'any.required': 'Email is required'
   }),
-  password: Joi.string().min(6).required().messages({
-    'string.min': 'Password must be at least 6 characters',
-    'any.required': 'Password is required'
-  }),
-  role: Joi.string().valid('admin', 'employee', 'distributor').default('employee')
+  password: STRONG_PASSWORD,
+  role: Joi.string().valid(...ROLE_VALUES).default('employee')
 });
 
 const loginSchema = Joi.object({
   email: Joi.string().email().required(),
   password: Joi.string().required()
+});
+
+const updateRoleSchema = Joi.object({
+  userId: Joi.string().required(),
+  role: Joi.string().valid(...ROLE_VALUES).required()
+});
+
+const updatePermissionsSchema = Joi.object({
+  userId: Joi.string().required(),
+  permissions_granted: Joi.array().items(Joi.string()).default([]),
+  permissions_revoked: Joi.array().items(Joi.string()).default([])
 });
 
 // --- Raw Material Validators ---
@@ -114,6 +140,8 @@ const dispatchUpdateSchema = Joi.object({
 module.exports = {
   registerSchema,
   loginSchema,
+  updateRoleSchema,
+  updatePermissionsSchema,
   rawMaterialSchema,
   rawMaterialUpdateSchema,
   manufacturingSchema,

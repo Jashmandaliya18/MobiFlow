@@ -1,15 +1,14 @@
 /**
- * Quality Control Routes
- * Admin and employees can add inspections
- * All authenticated users can view reports
+ * Quality Control Routes (SRS §3.1.3)
  */
 const express = require('express');
 const router = express.Router();
 const { addInspection, getReport } = require('../controllers/qcController');
 const auth = require('../middleware/auth');
-const roleAuth = require('../middleware/roleAuth');
+const { requirePerm } = require('../middleware/rbac');
+const { PERMISSIONS } = require('../config/permissions');
 
-router.post('/add', auth, roleAuth('admin', 'employee'), addInspection);
-router.get('/report', auth, getReport);
+router.post('/add',   auth, requirePerm(PERMISSIONS.QC_ADD),  addInspection);
+router.get('/report', auth, requirePerm(PERMISSIONS.QC_VIEW), getReport);
 
 module.exports = router;

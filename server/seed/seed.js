@@ -32,14 +32,30 @@ const seedDB = async () => {
     console.log('🗑️  Cleared existing data');
 
     // --- 1. Seed Users ---
+    // Roles per SRS §2.3 / §3.1.7: admin, procurement, warehouse, production,
+    // qa, dispatch, distributor. Legacy `employee` is kept so older demo flows
+    // still work without a migration.
     const users = await User.create([
-      { name: 'Admin User', email: 'admin@mobiflow.com', password: 'admin123', role: 'admin' },
-      { name: 'John Employee', email: 'john@mobiflow.com', password: 'employee123', role: 'employee' },
-      { name: 'Sarah Employee', email: 'sarah@mobiflow.com', password: 'employee123', role: 'employee' },
-      { name: 'TechMart Distributor', email: 'techmart@dist.com', password: 'dist123', role: 'distributor' },
-      { name: 'ElectroParts Distributor', email: 'electro@dist.com', password: 'dist123', role: 'distributor' }
+      { name: 'Admin User',              email: 'admin@mobiflow.com',      password: 'admin123',    role: 'admin' },
+      { name: 'John Employee',           email: 'john@mobiflow.com',       password: 'employee123', role: 'employee' },
+      { name: 'Sarah Employee',          email: 'sarah@mobiflow.com',      password: 'employee123', role: 'employee' },
+      { name: 'Priya Procurement',       email: 'priya@mobiflow.com',      password: 'procure123',  role: 'procurement' },
+      { name: 'Warren Warehouse',        email: 'warren@mobiflow.com',     password: 'warehouse123',role: 'warehouse' },
+      { name: 'Prakash Production',      email: 'prakash@mobiflow.com',    password: 'produce123',  role: 'production' },
+      { name: 'Qadir QA',                email: 'qadir@mobiflow.com',      password: 'qaqa1234',    role: 'qa' },
+      { name: 'Deepa Dispatch',          email: 'deepa@mobiflow.com',      password: 'dispatch123', role: 'dispatch' },
+      { name: 'TechMart Distributor',    email: 'techmart@dist.com',       password: 'dist123',     role: 'distributor' },
+      { name: 'ElectroParts Distributor',email: 'electro@dist.com',        password: 'dist123',     role: 'distributor' }
     ]);
     console.log('👥 Users seeded:', users.length);
+
+    // Lookup helpers so downstream seed data is not positionally coupled.
+    const userByEmail = (email) => users.find((u) => u.email === email);
+    const admin       = userByEmail('admin@mobiflow.com');
+    const john        = userByEmail('john@mobiflow.com');
+    const sarah       = userByEmail('sarah@mobiflow.com');
+    const techmart    = userByEmail('techmart@dist.com');
+    const electro     = userByEmail('electro@dist.com');
 
     // --- 2. Seed Raw Materials ---
     const materials = await RawMaterial.create([
@@ -159,21 +175,21 @@ const seedDB = async () => {
         inspection_result: 'Pass',
         defects: [],
         remarks: 'All units passed testing. Excellent quality.',
-        inspected_by: users[1]._id
+        inspected_by: john._id
       },
       {
         batch_id: batches[0]._id,
         inspection_result: 'Fail',
         defects: ['Soldering defect', 'Component alignment issue'],
         remarks: '5 units failed initial inspection. Reworked and re-tested.',
-        inspected_by: users[2]._id
+        inspected_by: sarah._id
       },
       {
         batch_id: batches[1]._id,
         inspection_result: 'Pass',
         defects: [],
         remarks: 'Partial inspection - 100 units tested, all passed.',
-        inspected_by: users[1]._id
+        inspected_by: john._id
       }
     ]);
     console.log('✅ Quality Control records seeded:', qcRecords.length);
@@ -216,28 +232,28 @@ const seedDB = async () => {
     // --- 6. Seed Orders ---
     const orders = await Order.create([
       {
-        distributor_id: users[3]._id,
+        distributor_id: techmart._id,
         product_id: inventoryItems[0]._id,
         quantity: 50,
         status: 'Delivered',
         order_date: new Date('2024-09-15')
       },
       {
-        distributor_id: users[3]._id,
+        distributor_id: techmart._id,
         product_id: inventoryItems[0]._id,
         quantity: 30,
         status: 'Dispatched',
         order_date: new Date('2024-10-01')
       },
       {
-        distributor_id: users[4]._id,
+        distributor_id: electro._id,
         product_id: inventoryItems[2]._id,
         quantity: 20,
         status: 'Approved',
         order_date: new Date('2024-10-10')
       },
       {
-        distributor_id: users[4]._id,
+        distributor_id: electro._id,
         product_id: inventoryItems[0]._id,
         quantity: 10,
         status: 'Pending',
@@ -267,9 +283,14 @@ const seedDB = async () => {
 
     console.log('\n✅ Database seeded successfully!');
     console.log('\n📋 Login Credentials:');
-    console.log('   Admin:       admin@mobiflow.com / admin123');
-    console.log('   Employee:    john@mobiflow.com / employee123');
-    console.log('   Distributor: techmart@dist.com / dist123');
+    console.log('   Admin:        admin@mobiflow.com    / admin123');
+    console.log('   Procurement:  priya@mobiflow.com    / procure123');
+    console.log('   Warehouse:    warren@mobiflow.com   / warehouse123');
+    console.log('   Production:   prakash@mobiflow.com  / produce123');
+    console.log('   QA:           qadir@mobiflow.com    / qaqa1234');
+    console.log('   Dispatch:     deepa@mobiflow.com    / dispatch123');
+    console.log('   Distributor:  techmart@dist.com     / dist123');
+    console.log('   Employee:     john@mobiflow.com     / employee123  (legacy combined role)');
 
     process.exit(0);
   } catch (error) {

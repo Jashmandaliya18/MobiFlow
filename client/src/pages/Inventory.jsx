@@ -5,10 +5,16 @@
 import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import DataTable from '../components/DataTable';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineX, HiOutlinePencil, HiOutlineExclamation } from 'react-icons/hi';
 
 const Inventory = () => {
+  const { hasPerm } = useAuth();
+  const canAdd = hasPerm(PERMISSIONS.INV_ADD);
+  const canUpdate = hasPerm(PERMISSIONS.INV_UPDATE);
+
   const [items, setItems] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -82,11 +88,13 @@ const Inventory = () => {
     { header: 'Status', render: (item) => (
       <span className={`status-badge status-${item.status.toLowerCase().replace(/\s/g, '-')}`}>{item.status}</span>
     )},
-    { header: 'Actions', render: (item) => (
-      <button onClick={() => handleEdit(item)} className="btn-secondary text-xs py-1 px-3">
-        <HiOutlinePencil className="inline mr-1" /> Edit
-      </button>
-    )}
+    ...(canUpdate ? [{
+      header: 'Actions', render: (item) => (
+        <button onClick={() => handleEdit(item)} className="btn-secondary text-xs py-1 px-3">
+          <HiOutlinePencil className="inline mr-1" /> Edit
+        </button>
+      )
+    }] : [])
   ];
 
   if (loading) {
@@ -94,22 +102,26 @@ const Inventory = () => {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Inventory & Warehouse</h1>
-          <p className="text-slate-400 text-sm mt-1">Real-time inventory tracking and management</p>
+    <div className="animate-fade-in page-container">
+      <div className="page-header">
+        <div style={{ minWidth: 0 }}>
+          <h1>Inventory &amp; Warehouse</h1>
+          <p className="subtitle">Real-time inventory tracking and management</p>
         </div>
-        <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn-primary">
-          {showForm ? <><HiOutlineX /> Close</> : <><HiOutlinePlus /> Add Item</>}
-        </button>
+        {canAdd && (
+          <div className="actions">
+            <button onClick={() => { resetForm(); setShowForm(!showForm); }} className="btn-primary">
+              {showForm ? <><HiOutlineX /> Close</> : <><HiOutlinePlus /> Add Item</>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Low Stock Alert */}
       {lowStock.length > 0 && (
-        <div className="glass-card p-4 mb-6 flex items-start gap-3" style={{ borderColor: 'rgba(245, 158, 11, 0.3)' }}>
+        <div className="glass-card p-4 flex items-start gap-3" style={{ borderColor: 'rgba(245, 158, 11, 0.3)' }}>
           <HiOutlineExclamation className="text-2xl text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
+          <div style={{ minWidth: 0 }}>
             <p className="font-semibold text-amber-400">Low Stock Alert</p>
             <p className="text-sm text-slate-400">
               {lowStock.length} item(s) need attention: {lowStock.map(i => `${i.item_name} (${i.quantity})`).join(', ')}
@@ -120,7 +132,7 @@ const Inventory = () => {
 
       {/* Form */}
       {showForm && (
-        <div className="glass-card p-6 mb-6 animate-fade-in">
+        <div className="glass-card p-6 animate-fade-in">
           <h3 className="text-lg font-semibold text-white mb-4">{editId ? 'Edit Item' : 'Add Inventory Item'}</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -139,7 +151,7 @@ const Inventory = () => {
               <label className="block text-sm text-slate-300 mb-1">Lot Number</label>
               <input name="lot_number" value={form.lot_number} onChange={handleChange} className="input-field" required placeholder="e.g. LOT-001" />
             </div>
-            <div className="md:col-span-2 flex gap-3">
+            <div className="md:col-span-2 flex flex-wrap gap-3 pt-2">
               <button type="submit" className="btn-primary">{editId ? 'Update' : 'Add'} Item</button>
               <button type="button" onClick={resetForm} className="btn-secondary">Cancel</button>
             </div>

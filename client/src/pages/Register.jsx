@@ -8,9 +8,11 @@ import { useAuth } from '../context/AuthContext';
 import API from '../api/axios';
 import toast from 'react-hot-toast';
 import { HiOutlineUser, HiOutlineMail, HiOutlineLockClosed, HiOutlineArrowRight } from 'react-icons/hi';
+import { ROLES, ROLE_LABELS } from '../config/permissions';
 
 const Register = () => {
-  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'employee' });
+  // Default to the most restrictive public-facing role.
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'distributor' });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -23,7 +25,7 @@ const Register = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data } = await API.post('/auth/register', form);
+      const { data } = await API.post('/auth/register', form, { skipAuthRedirect: true });
       login(data.user, data.token);
       toast.success('Registration successful!');
       navigate('/dashboard');
@@ -108,13 +110,16 @@ const Register = () => {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  placeholder="Min. 6 characters"
+                  placeholder="Min. 12 chars, upper, lower, digit, symbol"
                   className="input-field pl-10"
-                  minLength="6"
+                  minLength="12"
                   required
                   id="register-password"
                 />
               </div>
+              <p className="text-[11px] text-slate-500 mt-1">
+                Must be at least 12 characters and include upper &amp; lowercase letters, a digit, and a symbol.
+              </p>
             </div>
 
             {/* Role */}
@@ -127,9 +132,9 @@ const Register = () => {
                 className="select-field"
                 id="register-role"
               >
-                <option value="employee">Employee</option>
-                <option value="distributor">Distributor</option>
-                <option value="admin">Admin</option>
+                {ROLES.map((r) => (
+                  <option key={r} value={r}>{ROLE_LABELS[r]}</option>
+                ))}
               </select>
             </div>
 

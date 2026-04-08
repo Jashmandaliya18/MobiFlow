@@ -8,6 +8,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Sidebar from './components/Sidebar';
+import { PERMISSIONS } from './config/permissions';
 
 // Pages
 import Login from './pages/Login';
@@ -27,16 +28,10 @@ import Users from './pages/Users';
  */
 const AppLayout = ({ children }) => {
   return (
-    <div style={{ minHeight: '100vh', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh' }}>
       <Navbar />
       <Sidebar />
-      <main style={{
-        marginLeft: '220px',
-        marginTop: '64px',
-        padding: '24px',
-        minHeight: 'calc(100vh - 64px)',
-        overflowX: 'hidden',
-      }}>
+      <main className="app-main">
         {children}
       </main>
     </div>
@@ -66,49 +61,55 @@ const AppRoutes = () => {
       <Route path="/login" element={user ? <Navigate to="/dashboard" /> : <Login />} />
       <Route path="/register" element={user ? <Navigate to="/dashboard" /> : <Register />} />
 
-      {/* Protected Routes */}
+      {/* Protected Routes — gated by permission, not hard-coded roles */}
       <Route path="/dashboard" element={
-        <ProtectedRoute>
+        <ProtectedRoute anyPerms={[PERMISSIONS.DASHBOARD_VIEW]}>
           <AppLayout><Dashboard /></AppLayout>
         </ProtectedRoute>
       } />
       <Route path="/raw-materials" element={
-        <ProtectedRoute roles={['admin', 'employee']}>
+        <ProtectedRoute anyPerms={[PERMISSIONS.RAW_VIEW, PERMISSIONS.RAW_ADD]}>
           <AppLayout><RawMaterials /></AppLayout>
         </ProtectedRoute>
       } />
       <Route path="/manufacturing" element={
-        <ProtectedRoute roles={['admin', 'employee']}>
+        <ProtectedRoute anyPerms={[PERMISSIONS.MFG_VIEW, PERMISSIONS.MFG_CREATE]}>
           <AppLayout><Manufacturing /></AppLayout>
         </ProtectedRoute>
       } />
       <Route path="/quality-control" element={
-        <ProtectedRoute roles={['admin', 'employee']}>
+        <ProtectedRoute anyPerms={[PERMISSIONS.QC_VIEW, PERMISSIONS.QC_ADD]}>
           <AppLayout><QualityControl /></AppLayout>
         </ProtectedRoute>
       } />
       <Route path="/inventory" element={
-        <ProtectedRoute>
+        <ProtectedRoute anyPerms={[PERMISSIONS.INV_VIEW]}>
           <AppLayout><Inventory /></AppLayout>
         </ProtectedRoute>
       } />
       <Route path="/orders" element={
-        <ProtectedRoute>
+        <ProtectedRoute anyPerms={[PERMISSIONS.ORDER_VIEW_OWN, PERMISSIONS.ORDER_VIEW_ALL, PERMISSIONS.ORDER_PLACE]}>
           <AppLayout><Orders /></AppLayout>
         </ProtectedRoute>
       } />
       <Route path="/dispatch" element={
-        <ProtectedRoute roles={['admin', 'employee']}>
+        <ProtectedRoute anyPerms={[PERMISSIONS.DISPATCH_VIEW, PERMISSIONS.DISPATCH_CREATE]}>
           <AppLayout><Dispatch /></AppLayout>
         </ProtectedRoute>
       } />
       <Route path="/reports" element={
-        <ProtectedRoute roles={['admin', 'employee']}>
+        <ProtectedRoute anyPerms={[
+          PERMISSIONS.REPORT_INVENTORY,
+          PERMISSIONS.REPORT_ORDERS,
+          PERMISSIONS.REPORT_RAW,
+          PERMISSIONS.REPORT_MANUFACTURING,
+          PERMISSIONS.REPORT_QUALITY
+        ]}>
           <AppLayout><Reports /></AppLayout>
         </ProtectedRoute>
       } />
       <Route path="/users" element={
-        <ProtectedRoute roles={['admin']}>
+        <ProtectedRoute anyPerms={[PERMISSIONS.USER_VIEW]}>
           <AppLayout><Users /></AppLayout>
         </ProtectedRoute>
       } />

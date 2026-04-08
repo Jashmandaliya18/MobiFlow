@@ -5,10 +5,15 @@
 import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import DataTable from '../components/DataTable';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineX, HiOutlineClipboardCheck } from 'react-icons/hi';
 
 const QualityControl = () => {
+  const { hasPerm } = useAuth();
+  const canAdd = hasPerm(PERMISSIONS.QC_ADD);
+
   const [reports, setReports] = useState({ summary: {}, reports: [] });
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -76,19 +81,27 @@ const QualityControl = () => {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Quality Control</h1>
-          <p className="text-slate-400 text-sm mt-1">Inspect products and manage quality reports</p>
+    <div className="animate-fade-in page-container">
+      <div className="page-header">
+        <div style={{ minWidth: 0 }}>
+          <h1>Quality Control</h1>
+          <p className="subtitle">Inspect products and manage quality reports</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          {showForm ? <><HiOutlineX /> Close</> : <><HiOutlineClipboardCheck /> Record Inspection</>}
-        </button>
+        {canAdd && (
+          <div className="actions">
+            <button onClick={() => setShowForm(!showForm)} className="btn-primary">
+              {showForm ? <><HiOutlineX /> Close</> : <><HiOutlineClipboardCheck /> Record Inspection</>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '12px'
+      }}>
         <div className="glass-card p-4 text-center">
           <p className="text-2xl font-bold text-white">{reports.summary.total || 0}</p>
           <p className="text-xs text-slate-400">Total Inspections</p>
@@ -108,8 +121,8 @@ const QualityControl = () => {
       </div>
 
       {/* Inspection Form */}
-      {showForm && (
-        <div className="glass-card p-6 mb-6 animate-fade-in">
+      {showForm && canAdd && (
+        <div className="glass-card p-6 animate-fade-in">
           <h3 className="text-lg font-semibold text-white mb-4">Record Inspection</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -136,7 +149,7 @@ const QualityControl = () => {
               <label className="block text-sm text-slate-300 mb-1">Remarks</label>
               <input name="remarks" value={form.remarks} onChange={(e) => setForm({ ...form, remarks: e.target.value })} className="input-field" placeholder="Additional notes..." />
             </div>
-            <div className="md:col-span-2 flex gap-3">
+            <div className="md:col-span-2 flex flex-wrap gap-3 pt-2">
               <button type="submit" className="btn-primary">Record Inspection</button>
               <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
             </div>

@@ -51,15 +51,19 @@ const Dashboard = () => {
   const passRate = parseFloat(kpis?.qualityControl?.passRate) || 0;
 
   return (
-    <div className="animate-fade-in">
+    <div className="animate-fade-in page-container">
       {/* Header */}
-      <div style={{ marginBottom: '24px' }}>
+      <div>
         <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '4px' }}>Welcome back,</p>
         <h1 style={{ fontSize: '24px', fontWeight: '800', color: '#fff' }}>{user?.name} 👋</h1>
       </div>
 
-      {/* KPI Grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      {/* KPI Grid — auto-fit so cards reflow cleanly at any viewport width */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: '16px'
+      }}>
         <KPICard icon={HiOutlineUsers} label="Total Users" value={kpis?.users || 0} color="#6366f1" />
         <KPICard icon={HiOutlineCube} label="Raw Materials" value={kpis?.rawMaterials?.total || 0} color="#8b5cf6" />
         <KPICard icon={HiOutlineCog} label="Active Batches" value={kpis?.manufacturing?.active || 0} color="#3b82f6" />
@@ -71,7 +75,11 @@ const Dashboard = () => {
       </div>
 
       {/* Middle Row: Manufacturing + QC Ring + Orders */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+        gap: '16px'
+      }}>
         {/* Manufacturing */}
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#fff', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -156,7 +164,11 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Activity Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+        gap: '16px'
+      }}>
         {/* Recent Orders */}
         <div className="glass-card" style={{ padding: '24px' }}>
           <h3 style={{ fontSize: '15px', fontWeight: '700', color: '#fff', marginBottom: '16px' }}>Recent Orders</h3>

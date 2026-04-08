@@ -1,14 +1,16 @@
 /**
  * ProtectedRoute Component
- * Wraps routes that require authentication and optional role checks
+ * Wraps routes that require authentication. Accepts either:
+ *   - roles: array of role strings (legacy)
+ *   - perms: array of permission keys; user must hold every listed perm
+ *   - anyPerms: array of permission keys; user must hold at least one
  */
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, roles = [] }) => {
-  const { user, loading } = useAuth();
+const ProtectedRoute = ({ children, roles = [], perms = [], anyPerms = [] }) => {
+  const { user, loading, hasPerm, hasAnyPerm } = useAuth();
 
-  // Show loading spinner while checking auth
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -17,13 +19,19 @@ const ProtectedRoute = ({ children, roles = [] }) => {
     );
   }
 
-  // Not logged in → redirect to login
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  // Role check: if roles array is provided, verify user has one of them
   if (roles.length > 0 && !roles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (perms.length > 0 && !hasPerm(...perms)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (anyPerms.length > 0 && !hasAnyPerm(...anyPerms)) {
     return <Navigate to="/dashboard" replace />;
   }
 

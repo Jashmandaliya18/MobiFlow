@@ -27,3 +27,7 @@ Thumbs.db
 
 CREDENTIALS.md
 HOW_TO_RUN.md
+
+# Local extraction artefacts of the SRS docx
+srs.txt
+srs.xml

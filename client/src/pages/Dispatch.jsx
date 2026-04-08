@@ -5,10 +5,16 @@
 import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import DataTable from '../components/DataTable';
+import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineX, HiOutlineTruck } from 'react-icons/hi';
 
 const Dispatch = () => {
+  const { hasPerm } = useAuth();
+  const canCreate = hasPerm(PERMISSIONS.DISPATCH_CREATE);
+  const canUpdate = hasPerm(PERMISSIONS.DISPATCH_UPDATE);
+
   const [dispatches, setDispatches] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,15 +76,17 @@ const Dispatch = () => {
     { header: 'Status', render: (item) => (
       <span className={`status-badge status-${item.delivery_status.toLowerCase().replace(/\s/g, '-')}`}>{item.delivery_status}</span>
     )},
-    { header: 'Actions', render: (item) => {
-      if (item.delivery_status === 'Delivered') return <span className="text-xs text-green-500">✓ Delivered</span>;
-      const next = item.delivery_status === 'Pending' ? 'In Transit' : 'Delivered';
-      return (
-        <button onClick={() => updateDelivery(item._id, next)} className="btn-secondary text-xs py-1 px-3">
-          → {next}
-        </button>
-      );
-    }}
+    ...(canUpdate ? [{
+      header: 'Actions', render: (item) => {
+        if (item.delivery_status === 'Delivered') return <span className="text-xs text-green-500">✓ Delivered</span>;
+        const next = item.delivery_status === 'Pending' ? 'In Transit' : 'Delivered';
+        return (
+          <button onClick={() => updateDelivery(item._id, next)} className="btn-secondary text-xs py-1 px-3">
+            → {next}
+          </button>
+        );
+      }
+    }] : [])
   ];
 
   if (loading) {
@@ -86,20 +94,24 @@ const Dispatch = () => {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Distribution & Dispatch</h1>
-          <p className="text-slate-400 text-sm mt-1">Schedule and track shipments</p>
+    <div className="animate-fade-in page-container">
+      <div className="page-header">
+        <div style={{ minWidth: 0 }}>
+          <h1>Distribution &amp; Dispatch</h1>
+          <p className="subtitle">Schedule and track shipments</p>
         </div>
-        <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          {showForm ? <><HiOutlineX /> Close</> : <><HiOutlineTruck /> Create Dispatch</>}
-        </button>
+        {canCreate && (
+          <div className="actions">
+            <button onClick={() => setShowForm(!showForm)} className="btn-primary">
+              {showForm ? <><HiOutlineX /> Close</> : <><HiOutlineTruck /> Create Dispatch</>}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Dispatch Form */}
-      {showForm && (
-        <div className="glass-card p-6 mb-6 animate-fade-in">
+      {showForm && canCreate && (
+        <div className="glass-card p-6 animate-fade-in">
           <h3 className="text-lg font-semibold text-white mb-4">Create Dispatch</h3>
           {orders.length === 0 ? (
             <p className="text-slate-400 text-sm">No approved orders available for dispatch.</p>
@@ -124,7 +136,7 @@ const Dispatch = () => {
                 <label className="block text-sm text-slate-300 mb-1">Tracking ID</label>
                 <input value={form.tracking_id} onChange={(e) => setForm({ ...form, tracking_id: e.target.value })} className="input-field" required placeholder="e.g. TRK-2024-001" />
               </div>
-              <div className="md:col-span-3 flex gap-3">
+              <div className="md:col-span-3 flex flex-wrap gap-3 pt-2">
                 <button type="submit" className="btn-primary"><HiOutlinePlus /> Create Dispatch</button>
                 <button type="button" onClick={() => setShowForm(false)} className="btn-secondary">Cancel</button>
               </div>
@@ -134,7 +146,11 @@ const Dispatch = () => {
       )}
 
       {/* Summary */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+        gap: '12px'
+      }}>
         {['Pending', 'In Transit', 'Delivered'].map(status => (
           <div key={status} className="glass-card p-4 text-center">
             <p className="text-xl font-bold text-white">{dispatches.filter(d => d.delivery_status === status).length}</p>

@@ -72,10 +72,49 @@ body::before {
   border-radius: 16px;
   transition: all 0.3s ease;
   position: relative;
+  min-width: 0;   /* allow flex/grid children to shrink correctly */
 }
 .glass-card:hover {
   border-color: rgba(99, 102, 241, 0.18);
   box-shadow: 0 4px 24px rgba(99, 102, 241, 0.06);
+}
+
+/* === Page container === */
+/* Centralises page spacing so every page has consistent breathing room
+   and content never collides with sidebar/navbar edges. */
+.page-container {
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Title bar with an optional action button — wraps cleanly when the
+   viewport is narrow instead of overlapping. */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 16px;
+  min-width: 0;
+}
+.page-header h1 {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.2;
+}
+.page-header .subtitle {
+  color: #94a3b8;
+  font-size: 0.8rem;
+  margin-top: 2px;
+}
+.page-header .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* === Animations === */
@@ -237,16 +276,19 @@ body::before {
 .badge-danger { background: rgba(239, 68, 68, 0.1); color: #f87171; }
 .badge-info { background: rgba(59, 130, 246, 0.1); color: #60a5fa; }
 .badge-purple { background: rgba(139, 92, 246, 0.1); color: #a78bfa; }
+.badge-pink { background: rgba(236, 72, 153, 0.1); color: #f472b6; }
 
 /* === Table === */
 .data-table {
   width: 100%;
+  /* Ensure columns get enough room; the wrapper scrolls if viewport is narrower. */
+  min-width: 760px;
   border-collapse: separate;
   border-spacing: 0;
 }
 .data-table th {
   background: rgba(8, 5, 30, 0.8);
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.85rem;
   text-align: left;
   font-weight: 700;
   font-size: 0.65rem;
@@ -254,12 +296,14 @@ body::before {
   letter-spacing: 0.08em;
   color: #6366f1;
   border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+  white-space: nowrap;
 }
 .data-table td {
-  padding: 0.85rem 1rem;
-  font-size: 0.85rem;
+  padding: 0.75rem 0.85rem;
+  font-size: 0.82rem;
   border-bottom: 1px solid rgba(99, 102, 241, 0.04);
   color: #cbd5e1;
+  vertical-align: middle;
 }
 .data-table tbody tr { transition: background 0.2s; }
 .data-table tbody tr:hover td { background: rgba(99, 102, 241, 0.03); }
@@ -325,4 +369,22 @@ body::before {
   font-size: 1.5rem;
   font-weight: 800;
   color: #ffffff;
+}
+
+/* === App shell === */
+/* The sidebar is fixed; the main region compensates with left margin.
+   On narrow screens the sidebar hides and main takes the full width. */
+.app-main {
+  margin-left: 220px;
+  margin-top: 64px;
+  padding: 24px;
+  min-height: calc(100vh - 64px);
+  min-width: 0;           /* critical — lets flex/grid children shrink */
+  overflow-x: hidden;
+}
+.app-sidebar { display: flex; }
+
+@media (max-width: 900px) {
+  .app-main { margin-left: 0; padding: 16px; }
+  .app-sidebar { display: none; }
 }

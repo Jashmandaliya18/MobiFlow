@@ -1,17 +1,17 @@
 /**
- * Raw Material Routes
- * All routes require authentication
- * Add/Update restricted to admin and employee
+ * Raw Material Routes (SRS §3.1.1)
+ * All routes require authentication; actions gated by permission.
  */
 const express = require('express');
 const router = express.Router();
 const { addMaterial, updateMaterial, getAllMaterials, getLowStock } = require('../controllers/rawMaterialController');
 const auth = require('../middleware/auth');
-const roleAuth = require('../middleware/roleAuth');
+const { requirePerm } = require('../middleware/rbac');
+const { PERMISSIONS } = require('../config/permissions');
 
-router.post('/add', auth, roleAuth('admin', 'employee'), addMaterial);
-router.put('/update/:id', auth, roleAuth('admin', 'employee'), updateMaterial);
-router.get('/all', auth, getAllMaterials);
-router.get('/low-stock', auth, getLowStock);
+router.post('/add',          auth, requirePerm(PERMISSIONS.RAW_ADD),       addMaterial);
+router.put('/update/:id',    auth, requirePerm(PERMISSIONS.RAW_UPDATE),    updateMaterial);
+router.get('/all',           auth, requirePerm(PERMISSIONS.RAW_VIEW),      getAllMaterials);
+router.get('/low-stock',     auth, requirePerm(PERMISSIONS.RAW_LOW_STOCK), getLowStock);
 
 module.exports = router;

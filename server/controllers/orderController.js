@@ -6,6 +6,7 @@
 const Order = require('../models/Order');
 const Inventory = require('../models/Inventory');
 const { orderSchema, orderUpdateSchema } = require('../validators/validators');
+const { PERMISSIONS, userHasPermission } = require('../config/permissions');
 
 /**
  * POST /order/place
@@ -110,6 +111,16 @@ exports.getOrder = async (req, res) => {
       return res.status(404).json({ message: 'Order not found.' });
     }
 
+    // SRS §3.1.5: distributors see only their own orders unless they also
+    // hold order:view_all (granted via override).
+    const canViewAll = userHasPermission(req.user, PERMISSIONS.ORDER_VIEW_ALL);
+    if (!canViewAll) {
+      const ownerId = order.distributor_id?._id?.toString() || order.distributor_id?.toString();
+      if (ownerId !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Access denied. You can only view your own orders.' });
+      }
+    }
+
     res.json(order);
   } catch (error) {
     console.error('Get order error:', error);
@@ -123,6 +134,13 @@ exports.getOrder = async (req, res) => {
  */
 exports.getOrderHistory = async (req, res) => {
   try {
+    // SRS §3.1.5: distributors may only view their own history; staff with
+    // order:view_all may view any distributor's history.
+    const canViewAll = userHasPermission(req.user, PERMISSIONS.ORDER_VIEW_ALL);
+    if (!canViewAll && req.params.distributorId !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Access denied. You can only view your own order history.' });
+    }
+
     const orders = await Order.find({ distributor_id: req.params.distributorId })
       .populate('product_id', 'item_name quantity location')
       .sort({ createdAt: -1 });

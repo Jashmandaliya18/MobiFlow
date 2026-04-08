@@ -6,11 +6,16 @@ import { useState, useEffect } from 'react';
 import API from '../api/axios';
 import DataTable from '../components/DataTable';
 import { useAuth } from '../context/AuthContext';
+import { PERMISSIONS } from '../config/permissions';
 import toast from 'react-hot-toast';
 import { HiOutlinePlus, HiOutlineX, HiOutlineShoppingCart } from 'react-icons/hi';
 
 const Orders = () => {
-  const { user, hasRole } = useAuth();
+  const { user, hasPerm } = useAuth();
+  const canPlaceOrder = hasPerm(PERMISSIONS.ORDER_PLACE);
+  const canViewAll    = hasPerm(PERMISSIONS.ORDER_VIEW_ALL);
+  const canUpdate     = hasPerm(PERMISSIONS.ORDER_UPDATE);
+
   const [orders, setOrders] = useState([]);
   const [inventory, setInventory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -21,12 +26,9 @@ const Orders = () => {
 
   const fetchData = async () => {
     try {
-      let ordRes;
-      if (hasRole('distributor')) {
-        ordRes = await API.get(`/order/history/${user._id}`);
-      } else {
-        ordRes = await API.get('/order/all');
-      }
+      const ordRes = canViewAll
+        ? await API.get('/order/all')
+        : await API.get(`/order/history/${user._id}`);
       const invRes = await API.get('/inventory/all');
       setOrders(Array.isArray(ordRes.data) ? ordRes.data : []);
       setInventory(invRes.data);
@@ -61,7 +63,7 @@ const Orders = () => {
   };
 
   const getStatusActions = (order) => {
-    if (hasRole('distributor')) return null;
+    if (!canUpdate) return null;
     const nextStatus = {
       'Pending': 'Approved',
       'Approved': null, // Dispatch handles next transition
@@ -89,7 +91,7 @@ const Orders = () => {
       <span className={`status-badge status-${item.status.toLowerCase()}`}>{item.status}</span>
     )},
     { header: 'Date', render: (item) => <span className="text-xs text-slate-500">{new Date(item.order_date).toLocaleDateString()}</span> },
-    ...(hasRole('admin', 'employee') ? [{ header: 'Actions', render: (item) => getStatusActions(item) }] : [])
+    ...(canUpdate ? [{ header: 'Actions', render: (item) => getStatusActions(item) }] : [])
   ];
 
   if (loading) {
@@ -97,26 +99,24 @@ const Orders = () => {
   }
 
   return (
-    <div className="animate-fade-in">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">
-            {hasRole('distributor') ? 'My Orders' : 'Order Management'}
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            {hasRole('distributor') ? 'Place and track your orders' : 'Manage distributor orders'}
-          </p>
+    <div className="animate-fade-in page-container">
+      <div className="page-header">
+        <div style={{ minWidth: 0 }}>
+          <h1>{canViewAll ? 'Order Management' : 'My Orders'}</h1>
+          <p className="subtitle">{canViewAll ? 'Manage distributor orders' : 'Place and track your orders'}</p>
         </div>
-        {hasRole('distributor') && (
-          <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-            {showForm ? <><HiOutlineX /> Close</> : <><HiOutlineShoppingCart /> Place Order</>}
-          </button>
+        {canPlaceOrder && (
+          <div className="actions">
+            <button onClick={() => setShowForm(!showForm)} className="btn-primary">
+              {showForm ? <><HiOutlineX /> Close</> : <><HiOutlineShoppingCart /> Place Order</>}
+            </button>
+          </div>
         )}
       </div>
 
-      {/* Place Order Form (Distributor only) */}
-      {showForm && hasRole('distributor') && (
-        <div className="glass-card p-6 mb-6 animate-fade-in">
+      {/* Place Order Form — visible only to users with order:place */}
+      {showForm && canPlaceOrder && (
+        <div className="glass-card p-6 animate-fade-in">
           <h3 className="text-lg font-semibold text-white mb-4">Place New Order</h3>
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
@@ -141,7 +141,11 @@ const Orders = () => {
       )}
 
       {/* Orders Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+        gap: '12px'
+      }}>
         {['Pending', 'Approved', 'Dispatched', 'Delivered'].map(status => (
           <div key={status} className="glass-card p-4 text-center">
             <p className="text-xl font-bold text-white">{orders.filter(o => o.status === status).length}</p>
